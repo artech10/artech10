@@ -58,10 +58,3 @@ Este script em **Google Apps Script** foi desenvolvido para automatizar a organi
 
 Neste caso, `12345678` será identificado como o ID da entrevista.
 
----
-
-## 👨‍💻 Sobre o desenvolvimento
-
-Este script foi criado como parte do processo de automação da **Ágora Pesquisa**, otimizando o fluxo de organização e acompanhamento de coletas de áudio por aeroporto.
-
-Se precisar de ajuda ou quiser sugerir melhorias, sinta-se à vontade para abrir uma issue ou entrar em contato! 😊

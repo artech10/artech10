@@ -1,0 +1,146 @@
+function moverAudiosParaDestino() {
+  // Mapeamento de ID de Aeroporto para Siglas
+  var mapaAeroportos = {
+    "1": "SBBE",
+    "2": "SBBR",
+    "3": "SBCF",
+    "4": "SBCT",
+    "5": "SBCY",
+    "6": "SBEG",
+    "7": "SBFL",
+    "8": "SBFZ",
+    "9": "SBGL",
+    "10": "SBGO",
+    "11": "SBGR",
+    "12": "SBKP",
+    "13": "SBMO",
+    "14": "SBPA",
+    "15": "SBRF",
+    "16": "SBRJ",
+    "17": "SBSG",
+    "18": "SBSP",
+    "19": "SBSV",
+    "20": "SBVT"
+    // Adicione outros aeroportos conforme necessário
+  };
+
+  var idsPastasAero = {
+    "SBBE": "bnhytmjjuykyu", // ID da pasta no google drive
+    "SBBR": "bnhytmjjuykreyu", // ID da pasta no google drive
+    "SBCF": "bnhytmjjwegguykyu", // ID da pasta no google drive
+    "SBCT": "bnhytvwegfgmjjuykyu", // ID da pasta no google drive
+    "SBCY": "bnhybgrebtmjjuykyu", // ID da pasta no google drive
+    "SBEG": "bnhbgbreytmjjuykyu", // ID da pasta no google drive
+    "SBFL": "bnhyfebertmjjuykyu", // ID da pasta no google drive
+    "SBFZ": "brebrebntern", // ID da pasta no google drive
+    "SBGL": "bnhytmjberbherjuykyu", // ID da pasta no google drive
+    "SBGO": "bnhtbhthytmjjuykyu", // ID da pasta no google drive
+    "SBGR": "bnhyrehrhbtmjjuykyu", // ID da pasta no google drive
+    "SBKP": "bnhytmghbr5ehbjjuykyu", // ID da pasta no google drive
+    "SBMO": "bnhytmregbrebhjjuykyu", // ID da pasta no google drive
+    "SBPA": "bnhyrebhrtehbtmjjuykyu", // ID da pasta no google drive
+    "SBRF": "btrhtrhn", // ID da pasta no google drive
+    "SBRJ": "gerhgr5ehb", // ID da pasta no google drive
+    "SBSG": "bnhrehbtrbhytmjjuykyu", // ID da pasta no google drive
+    "SBSP": "bnhytmthbregjjuykyu", // ID da pasta no google drive
+    "SBSV": "bnhytmrehbgrebjjuykyu", // ID da pasta no google drive
+    "SBVT": "bnhyrehgbregetmjjuykyu", // ID da pasta no google drive
+  };
+
+  // Acessar a planilha do Google Sheets
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Acessar as abas da planilha auxiliar e de retorno
+  var planilhaAuxiliar = ss.getSheetByName('Auxiliar');
+  var planilhaRetorno = ss.getSheetByName('Retorno');
+  
+  // Obter os dados da planilha auxiliar (ID de pesquisa e ID de aeroporto)
+  var dadosAuxiliar = planilhaAuxiliar.getDataRange().getValues();
+  
+  // Obter os dados da planilha de retorno (IDs de pesquisa já processados)
+  var dadosRetorno = planilhaRetorno.getRange(2, 1, planilhaRetorno.getLastRow() - 1, 1).getValues(); // A partir da linha 2
+
+  // Pasta de origem dos áudios
+  var pastaOrigem = DriveApp.getFolderById('thtrhtr'); // Colocar o ID da pasta de origem dos áudios
+
+  // Lista de arquivos da pasta de origem
+  var arquivosOrigem = pastaOrigem.getFiles();
+
+  // Iterar sobre cada arquivo na pasta de origem
+  while (arquivosOrigem.hasNext()) {
+    try {
+      var arquivo = arquivosOrigem.next();
+      var nomeArquivo = arquivo.getName();
+      
+      // Extrair o ID de pesquisa do nome do arquivo
+      var idPesquisa = nomeArquivo.split(' ')[0]; // Considera que o ID de pesquisa está antes do espaço
+
+      // Verificar se o ID de pesquisa já foi processado (está na planilha de retorno)
+      if (!jaProcessado(idPesquisa, dadosRetorno)) {
+        // Verificar se o ID de pesquisa existe na planilha auxiliar
+        var idAeroporto = buscarIdAeroporto(idPesquisa, dadosAuxiliar);
+
+        // Se encontrar um ID de aeroporto correspondente
+        if (idAeroporto) {
+          var caminhoDestino = getCaminhoDestino(idAeroporto, mapaAeroportos, idsPastasAero);
+          
+          if (caminhoDestino) {
+            // Localiza a pasta de destino usando o ID
+            var pastaDestino = DriveApp.getFolderById(caminhoDestino);
+
+            // Copiar o arquivo para a pasta de destino
+            var arquivoCopiado = arquivo.makeCopy(pastaDestino);
+
+            // Verificar se o arquivo foi copiado corretamente antes de obter o link
+            if (arquivoCopiado) {
+              var linkArquivo = arquivoCopiado.getUrl();
+
+              // Inserir na planilha de retorno
+              planilhaRetorno.appendRow([idPesquisa, linkArquivo]);
+            } else {
+              Logger.log('Erro ao copiar o arquivo: ' + nomeArquivo);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('Erro ao processar o arquivo: ' + e.message);
+    }
+  }
+}
+
+// Função para verificar se o ID de pesquisa já foi processado
+function jaProcessado(idPesquisa, dadosRetorno) {
+  for (var i = 0; i < dadosRetorno.length; i++) {
+    if (dadosRetorno[i][0] == idPesquisa) {
+      return true; // Já foi processado
+    }
+  }
+  return false;
+}
+
+// Função para buscar o ID de aeroporto a partir do ID de pesquisa na planilha auxiliar
+function buscarIdAeroporto(idPesquisa, dadosAuxiliar) {
+  for (var i = 1; i < dadosAuxiliar.length; i++) { // Começar a partir da segunda linha (assumindo que a primeira é cabeçalho)
+    if (dadosAuxiliar[i][0] == idPesquisa) {
+      return dadosAuxiliar[i][1]; // Retorna o ID do aeroporto
+    }
+  }
+  return null;
+}
+
+// Função para obter o caminho de destino com base no ID do aeroporto
+function getCaminhoDestino(idAeroporto, mapaAeroportos, idsPastasAero) {
+  var codigoAeroporto = mapaAeroportos[idAeroporto]; // Obtemos a sigla a partir do ID
+  
+  if (codigoAeroporto) {
+    var idPastaAero = idsPastasAero[codigoAeroporto]; // Obtém o ID da pasta do mês
+    
+    if (idPastaAero) {
+      return idPastaAero; // Retorna apenas o ID da pasta
+    } else {
+      Logger.log('ID da pasta do mês não encontrado para aeroporto: ' + codigoAeroporto);
+    }
+  }
+  return null;
+}
